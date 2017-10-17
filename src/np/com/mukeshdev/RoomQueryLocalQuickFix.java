@@ -6,6 +6,9 @@ import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Quick Fix For Query
+ */
 //TODO To be implemented
 public class RoomQueryLocalQuickFix implements LocalQuickFix {
 
