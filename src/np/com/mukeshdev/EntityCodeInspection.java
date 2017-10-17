@@ -118,6 +118,9 @@ public class EntityCodeInspection extends BaseJavaLocalInspectionTool {
         }
 
         PsiModifierList psiModifierList = aClass.getModifierList();
+        if(psiModifierList==null){
+            return;
+        }
         if (annotationParameterHasPrimaryKey) {
             availableColumnNames.deleteCharAt(availableColumnNames.length()-1);
             holder.registerProblem(psiModifierList,

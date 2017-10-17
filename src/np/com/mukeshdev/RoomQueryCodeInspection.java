@@ -1,7 +1,11 @@
 package np.com.mukeshdev;
 
-import com.intellij.codeInspection.*;
+import com.intellij.codeInspection.BaseJavaLocalInspectionTool;
+import com.intellij.codeInspection.ProblemHighlightType;
+import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.psi.*;
+import com.intellij.psi.util.PsiTypesUtil;
+import com.intellij.psi.util.PsiUtil;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,7 +16,7 @@ import java.util.StringTokenizer;
 /**
  * Check for error in Query
  * Check if bind variable in query has matching parameter
- * Check if Table Name is Correct
+ * Check if Table Name is Correct in Query
  */
 public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
 
@@ -107,6 +111,73 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
             if (endIndexOfTableName > 0) {
                 String tableName = queryAnnotationText.substring(0, endIndexOfTableName);
 
+
+                /*
+                * Check in Entity Class for table name
+                * and see if it match with query table Name
+                * */
+                PsiClass entityClassOfTheQuery;
+
+                PsiType psiTypes = method.getReturnType();
+
+                if (psiTypes != null) {
+                    if (psiTypes.getCanonicalText().contains("<")) {
+                        psiTypes = PsiUtil.extractIterableTypeParameter(psiTypes, false);
+                    }
+                } else {
+                    return;
+                }
+
+                entityClassOfTheQuery = PsiTypesUtil.getPsiClass(psiTypes);
+
+                if (entityClassOfTheQuery != null) {
+                    System.out.println("->" + entityClassOfTheQuery.getQualifiedName());
+
+                    PsiModifierList psiModifierList =
+                            entityClassOfTheQuery.getModifierList();
+
+                    if (psiModifierList != null) {
+                        PsiAnnotation psiAnnotationOfEntityClass
+                                = psiModifierList.findAnnotation("android.arch.persistence.room.Entity");
+
+                        if (psiAnnotationOfEntityClass != null) {
+                            PsiNameValuePair[] psiEntityClassAnnotationNameValuePairs = psiAnnotationOfEntityClass.getParameterList().getAttributes();
+
+                            String psiNameValuePairOfAnnotationParameterName;
+
+                            for (PsiNameValuePair psiNameValuePair : psiEntityClassAnnotationNameValuePairs) {
+
+                                psiNameValuePairOfAnnotationParameterName = psiNameValuePair.getName();
+
+                                if (psiNameValuePairOfAnnotationParameterName != null) {
+                                    if (psiNameValuePairOfAnnotationParameterName.equals("tableName")) {
+                                        String TableNameFromEntityClass = psiNameValuePair.getLiteralValue();
+
+                                        if (TableNameFromEntityClass != null)
+                                            if (!TableNameFromEntityClass.equalsIgnoreCase(tableName)) {
+                                                holder.registerProblem(method.getModifierList(), "No Such table: " + tableName +
+                                                                ".Table Name of Entity Class(" + entityClassOfTheQuery.getQualifiedName() + ")is " + TableNameFromEntityClass
+
+                                                        , ProblemHighlightType.GENERIC_ERROR);
+                                            }
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+
+                } else {
+                    System.out.println("Not class ->" + method.getReturnType());
+                    return;
+                }
+
+
+                /*
+                *Now there is no custom table name give in Entity Class
+                *we use check with Return Type default table name
+                */
                 String methodReturnType = method.getReturnType().toString().toLowerCase();
 
                 StringTokenizer st = new StringTokenizer(methodReturnType, ":");
@@ -161,9 +232,9 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
             annotationVariable =
                     queryAnnotationText.substring(indexOfQueryVariable + ":".length(), annotationParameterEndIndex);
 
-            annotationVariable=annotationVariable.replace("\n","");
-            annotationVariable=annotationVariable.replace(" ","");
-            annotationVariable=annotationVariable.replace("\"","");
+            annotationVariable = annotationVariable.replace("\n", "");
+            annotationVariable = annotationVariable.replace(" ", "");
+            annotationVariable = annotationVariable.replace("\"", "");
 
             if (!methodParameterNameList.contains(annotationVariable)) {
 
