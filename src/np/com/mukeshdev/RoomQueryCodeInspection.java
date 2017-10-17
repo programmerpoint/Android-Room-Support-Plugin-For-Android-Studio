@@ -5,7 +5,6 @@ import com.intellij.psi.*;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -13,13 +12,14 @@ import java.util.StringTokenizer;
 /**
  * Check for error in Query
  * Check if bind variable in query has matching parameter
+ * Check if Table Name is Correct
  */
 public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
 
     private static final String ANNOTATION_QUERY = "@Query";
-    private static final String ANNOTATION_DELETE = "@Delete";
-    public static final String FROM = " from ";
-    public static final String SELECT = "select";
+    /*private static final String ANNOTATION_DELETE = "@Delete";*/
+    private static final String FROM = " from ";
+    private static final String SELECT = "select";
     /*private RoomQueryLocalQuickFix roomQueryLocalQuickFix = new RoomQueryLocalQuickFix();*/
 
     @Nls
@@ -144,15 +144,26 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
             annotationParameterEndIndex = queryAnnotationText.indexOf(" ", indexOfQueryVariable);
 
             if (annotationParameterEndIndex == -1) {
+                annotationParameterEndIndex = queryAnnotationText.indexOf("\n", indexOfQueryVariable);
+            }
+
+
+            if (annotationParameterEndIndex == -1) {
                 annotationParameterEndIndex = queryAnnotationText.indexOf("\"", indexOfQueryVariable);
             }
+
 
             if (annotationParameterEndIndex == -1) {
                 break;
             }
 
+
             annotationVariable =
                     queryAnnotationText.substring(indexOfQueryVariable + ":".length(), annotationParameterEndIndex);
+
+            annotationVariable=annotationVariable.replace("\n","");
+            annotationVariable=annotationVariable.replace(" ","");
+            annotationVariable=annotationVariable.replace("\"","");
 
             if (!methodParameterNameList.contains(annotationVariable)) {
 
