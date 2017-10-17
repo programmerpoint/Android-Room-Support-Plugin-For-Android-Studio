@@ -8,6 +8,6 @@ public class RoomCodeInspectionProvider implements InspectionToolProvider {
     @NotNull
     @Override
     public Class[] getInspectionClasses() {
-        return new Class[]{RoomQueryCodeInspection.class};
+        return new Class[]{RoomQueryCodeInspection.class,EntityCodeInspection.class};
     }
 }
