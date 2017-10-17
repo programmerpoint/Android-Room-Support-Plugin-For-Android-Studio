@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>mp.com.mukeshdev.room</id>
   <name>Android Room Support</name>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <vendor email="mukesh@mukesdev.com.np" url="https://www.mukeshdev.com.np">MM Dev</vendor>
 
   <description><![CDATA[

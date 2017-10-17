@@ -96,6 +96,7 @@ public class EntityCodeInspection extends BaseJavaLocalInspectionTool {
         String annotationParameterAttributeName;
         List<String> annotationParameterAttributeValue = new ArrayList<>();
         String annotationParameterAttributeValues;
+        int NumberOfAnnotationParameterAttributeValuesMatchedWithField=0;
 
         boolean annotationParameterHasPrimaryKey = false;
         StringBuilder availableColumnNames = new StringBuilder();
@@ -112,7 +113,7 @@ public class EntityCodeInspection extends BaseJavaLocalInspectionTool {
             if (psiClassAnnotationParameterNameValuePair.getValue() != null) {
                 annotationParameterAttributeValues = psiClassAnnotationParameterNameValuePair.getValue().getText();
 
-                StringTokenizer stringTokenizer = new StringTokenizer(annotationParameterAttributeValues, "{\",}");
+                StringTokenizer stringTokenizer = new StringTokenizer(annotationParameterAttributeValues, "{\",} ");
                 while (stringTokenizer.hasMoreTokens()) {
                     annotationParameterAttributeValue.add(stringTokenizer.nextToken());
                 }
@@ -126,6 +127,7 @@ public class EntityCodeInspection extends BaseJavaLocalInspectionTool {
             if (annotationParameterAttributeName != null && annotationParameterAttributeValue.get(0) != null) {
                 if (annotationParameterAttributeName.equals("primaryKeys")) {
                     annotationParameterHasPrimaryKey = true;
+                    NumberOfAnnotationParameterAttributeValuesMatchedWithField=0;
                     for (PsiField psiField : psiFields) {
                         fieldNameAlteredByColumnInfoAnnotationName = null;
                         psiModifierListOfFieldOfEntityClass = psiField.getModifierList();
@@ -158,18 +160,22 @@ public class EntityCodeInspection extends BaseJavaLocalInspectionTool {
                             if (fieldNameAlteredByColumnInfoAnnotationName == null) {
                                 availableColumnNames.append(fieldName).append(",");
                                 if (annotationParameterAttributeValue.contains(fieldName)) {
-                                    return;
+                                    NumberOfAnnotationParameterAttributeValuesMatchedWithField+=1;
                                 }
                             } else {
                                 availableColumnNames.append(fieldNameAlteredByColumnInfoAnnotationName).append(",");
                                 if (annotationParameterAttributeValue.contains(fieldNameAlteredByColumnInfoAnnotationName)) {
-                                    return;
+                                    NumberOfAnnotationParameterAttributeValuesMatchedWithField+=1;
                                 }
                             }
                         } else {
                             return;
                         }
 
+                    }
+
+                    if(NumberOfAnnotationParameterAttributeValuesMatchedWithField>=annotationParameterAttributeValue.size()){
+                        return;
                     }
                 }
             } else {
