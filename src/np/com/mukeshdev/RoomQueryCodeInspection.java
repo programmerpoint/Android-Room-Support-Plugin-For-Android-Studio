@@ -49,14 +49,16 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
             @Override
             public void visitMethod(PsiMethod method) {
                 super.visitMethod(method);
-
                 try {
                     PsiModifierList psiModifierList = method.getModifierList();
 
-                    String annotation = psiModifierList.toString();
+                    String annotation;
+                    PsiAnnotation psiAnnotation = psiModifierList.findAnnotation("android.arch.persistence.room.Query");
 
-                    if (annotation.contains(ANNOTATION_QUERY)) {
+                    if (psiAnnotation != null) {
+                        annotation = psiAnnotation.getText();
                         RunQueryCodeInspection(method, annotation, holder);
+
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -89,7 +91,7 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
     private void runQueryTableNameCodeInspection(PsiMethod method, String annotation, @NotNull ProblemsHolder holder) {
         String queryAnnotationText = annotation;
         queryAnnotationText = queryAnnotationText.toLowerCase();
-        if (queryAnnotationText.contains(FROM) && queryAnnotationText.contains(SELECT)) {
+        if (queryAnnotationText.contains(FROM) && queryAnnotationText.contains(SELECT) && !queryAnnotationText.contains(".")) {
             int indexOfFrom = queryAnnotationText.indexOf(FROM);
 
             int indexOfTableName = indexOfFrom + FROM.length();
@@ -111,8 +113,16 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
                 st.nextToken();
                 methodReturnType = st.nextToken();
 
-                methodReturnType=methodReturnType.replace("list<", "");
-                methodReturnType=methodReturnType.replace(">", "");
+                if (methodReturnType.contains("list<")) {
+
+                    methodReturnType = methodReturnType.substring(
+                            methodReturnType.indexOf("list<") + "list<".length());
+
+                    st = new StringTokenizer(methodReturnType, ">");
+
+                    methodReturnType = st.nextToken();
+
+                }
 
                 if (!methodReturnType.equalsIgnoreCase(tableName)) {
                     holder.registerProblem(method.getModifierList(), "No Such table: " + tableName
