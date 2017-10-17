@@ -7,6 +7,10 @@ import com.intellij.psi.*;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 /**
  * Check for Primary Key and check if it is correct
  */
@@ -93,7 +97,12 @@ public class EntityCodeInspection extends BaseJavaLocalInspectionTool {
         boolean annotationParameterHasPrimaryKey = false;
         StringBuilder availableColumnNames = new StringBuilder();
         String fieldName;
+        String fieldNameAlteredByColumnInfoAnnotationName=null;
 
+        PsiModifierList psiModifierListOfFieldOfEntityClass;
+        PsiAnnotation psiAnnotationOfFieldOfEntityClass;
+        PsiAnnotationParameterList psiAnnotationParameterListOfFieldsOfEntityClass;
+        PsiNameValuePair[] psiNameValuePairsOfFieldOfEntityClass;
         for (PsiNameValuePair psiClassAnnotationParameterNameValuePair : psiClassAnnotationParameterNameValuePairs) {
             annotationParameterAttributeName = psiClassAnnotationParameterNameValuePair.getName();
             annotationParameterAttributeValue = psiClassAnnotationParameterNameValuePair.getLiteralValue();
@@ -102,27 +111,61 @@ public class EntityCodeInspection extends BaseJavaLocalInspectionTool {
                 if (annotationParameterAttributeName.equals("primaryKeys")) {
                     annotationParameterHasPrimaryKey = true;
                     for (PsiField psiField : psiFields) {
+                        fieldNameAlteredByColumnInfoAnnotationName=null;
+                        psiModifierListOfFieldOfEntityClass = psiField.getModifierList();
+
+                        if (psiModifierListOfFieldOfEntityClass != null) {
+                            psiAnnotationOfFieldOfEntityClass =
+                                    psiModifierListOfFieldOfEntityClass.findAnnotation("android.arch.persistence.room.ColumnInfo");
+
+                            if (psiAnnotationOfFieldOfEntityClass != null) {
+                                psiAnnotationParameterListOfFieldsOfEntityClass =
+                                        psiAnnotationOfFieldOfEntityClass.getParameterList();
+                                psiNameValuePairsOfFieldOfEntityClass =
+                                        psiAnnotationParameterListOfFieldsOfEntityClass.getAttributes();
+
+                                for (PsiNameValuePair psiNameValuePair :
+                                        psiNameValuePairsOfFieldOfEntityClass) {
+                                    if (psiNameValuePair.getName() != null && psiNameValuePair.getName().equals("name")) {
+                                        fieldNameAlteredByColumnInfoAnnotationName= psiNameValuePair.getLiteralValue();
+                                        break;
+                                    }
+                                }
+                            }
+
+                        }
+
                         fieldName = psiField.getName();
 
                         if (fieldName != null) {
-                            availableColumnNames.append(fieldName).append(",");
-                            if (fieldName.
-                                    equals(annotationParameterAttributeValue)) {
-                                return;
+
+                            if (fieldNameAlteredByColumnInfoAnnotationName==null) {
+                                availableColumnNames.append(fieldName).append(",");
+                                if (fieldName.
+                                        equals(annotationParameterAttributeValue)) {
+                                    return;
+                                }
+                            }else{
+                                availableColumnNames.append(fieldNameAlteredByColumnInfoAnnotationName).append(",");
+                                if (fieldNameAlteredByColumnInfoAnnotationName.
+                                        equals(annotationParameterAttributeValue)) {
+                                    return;
+                                }
                             }
                         } else {
                             return;
                         }
+
                     }
                 }
         }
 
         PsiModifierList psiModifierList = aClass.getModifierList();
-        if(psiModifierList==null){
+        if (psiModifierList == null) {
             return;
         }
         if (annotationParameterHasPrimaryKey) {
-            availableColumnNames.deleteCharAt(availableColumnNames.length()-1);
+            availableColumnNames.deleteCharAt(availableColumnNames.length() - 1);
             holder.registerProblem(psiModifierList,
                     "Error: Referenced in the primary key does not exists in the Entity. " +
                             "Available column names:" + availableColumnNames
