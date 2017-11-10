@@ -9,9 +9,10 @@ import com.intellij.psi.util.PsiUtil;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.StringTokenizer;
 
 /**
  * Check for error in Query
@@ -24,6 +25,16 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
     /*private static final String ANNOTATION_DELETE = "@Delete";*/
     private static final String FROM = " from ";
     private static final String SELECT = "select";
+
+    private static final String ANNOTATION_QUALIFIED_NAME_QUERY = "android.arch.persistence.room.Query";
+    private static final String ANNOTATION_QUALIFIED_NAME_DELETE = "android.arch.persistence.room.Delete";
+    private static final String ANNOTATION_QUALIFIED_NAME_INSERT = "android.arch.persistence.room.Insert";
+
+    private List<String> ListOfRoomAnnotationToCheck =
+            Arrays.asList(ANNOTATION_QUALIFIED_NAME_QUERY,
+                    ANNOTATION_QUALIFIED_NAME_DELETE,
+                    ANNOTATION_QUALIFIED_NAME_INSERT);
+
     /*private RoomQueryLocalQuickFix roomQueryLocalQuickFix = new RoomQueryLocalQuickFix();*/
 
     @Nls
@@ -56,12 +67,21 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
                 try {
                     PsiModifierList psiModifierList = method.getModifierList();
 
-                    String annotation;
-                    PsiAnnotation psiAnnotation = psiModifierList.findAnnotation("android.arch.persistence.room.Query");
+                    String annotation = CheckForRoomAnnotation(psiModifierList);
 
-                    if (psiAnnotation != null) {
-                        annotation = psiAnnotation.getText();
-                        RunQueryCodeInspection(method, annotation, holder);
+                    if (annotation != null) {
+                        switch (annotation) {
+                            case ANNOTATION_QUALIFIED_NAME_QUERY:
+                                RunQueryCodeInspection(method,
+                                        psiModifierList.findAnnotation(ANNOTATION_QUALIFIED_NAME_QUERY).getText(), holder);
+                                break;
+                            case ANNOTATION_QUALIFIED_NAME_DELETE:
+                                RunDeleteQueryCodeInspection(method, holder);
+                                break;
+                            case ANNOTATION_QUALIFIED_NAME_INSERT:
+                                RunInsertQueryCodeInspection(method, holder);
+                                break;
+                        }
 
                     }
                 } catch (Exception e) {
@@ -72,6 +92,38 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
         };
 
 
+    }
+
+    private String CheckForRoomAnnotation(PsiModifierList psiModifierList) {
+        PsiAnnotation psiAnnotation;
+
+        for (String RoomAnnotationToCheck : ListOfRoomAnnotationToCheck) {
+            psiAnnotation = psiModifierList.findAnnotation(RoomAnnotationToCheck);
+            if (psiAnnotation != null) {
+                return RoomAnnotationToCheck;
+            }
+        }
+
+        return null;
+
+    }
+
+    //TODO add more inspection
+    private void RunInsertQueryCodeInspection(PsiMethod method, ProblemsHolder holder) {
+        if (method.getParameterList().getParameters().length == 0) {
+            holder.registerProblem(method.getModifierList(),
+                    "Error: Method annotated with @Insert but does not have any parameters to insert."
+                    , ProblemHighlightType.GENERIC_ERROR);
+        }
+    }
+
+    //TODO add more inspection
+    private void RunDeleteQueryCodeInspection(PsiMethod method, ProblemsHolder holder) {
+        if (method.getParameterList().getParameters().length == 0) {
+            holder.registerProblem(method.getModifierList(),
+                    "Error: Method annotated with @Delete but does not have any parameters to delete."
+                    , ProblemHighlightType.GENERIC_ERROR);
+        }
     }
 
     private void RunQueryCodeInspection(PsiMethod method, String annotation, @NotNull ProblemsHolder holder) {
