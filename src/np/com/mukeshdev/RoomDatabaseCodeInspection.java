@@ -7,6 +7,10 @@ import com.intellij.psi.*;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Check if Classes annotated with @Database extend RoomDatabase
+ * (android.arch.persistence.room.RoomDatabase)
+ */
 public class RoomDatabaseCodeInspection extends BaseJavaLocalInspectionTool {
 
     @Nls
