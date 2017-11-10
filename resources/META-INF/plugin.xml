@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>np.com.mukeshdev.room</id>
   <name>Android Room Support</name>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <vendor email="mukesh@mukesdev.com.np" url="https://www.mukeshdev.com.np">MM Dev</vendor>
 
   <description><![CDATA[
@@ -10,7 +10,7 @@
     ]]></description>
 
   <change-notes><![CDATA[
-      Entity Code Inspection for Primary Key Added.<br>
+      Table Name Code Inspection Bug fix<br>
     ]]>
   </change-notes>
 

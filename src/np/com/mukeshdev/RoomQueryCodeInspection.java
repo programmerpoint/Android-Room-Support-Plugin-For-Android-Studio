@@ -92,6 +92,16 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
 
     }
 
+    /*
+    * Do not work for all case
+    * Only works if return type has Table Class
+    *
+    * It check for return type and check for @Entity
+    * to determine the valid table name and check for table name
+    * in @Query
+    *
+    * */
+    //TODO Update to make it work for other case
     private void runQueryTableNameCodeInspection(PsiMethod method, String annotation, @NotNull ProblemsHolder holder) {
         String queryAnnotationText = annotation;
         queryAnnotationText = queryAnnotationText.toLowerCase();
@@ -121,6 +131,7 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
                 PsiType psiTypes = method.getReturnType();
 
                 if (psiTypes != null) {
+                    //Check if psiTypes is List<>
                     if (psiTypes.getCanonicalText().contains("<")) {
                         psiTypes = PsiUtil.extractIterableTypeParameter(psiTypes, false);
                     }
@@ -131,7 +142,7 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
                 entityClassOfTheQuery = PsiTypesUtil.getPsiClass(psiTypes);
 
                 if (entityClassOfTheQuery != null) {
-                    System.out.println("->" + entityClassOfTheQuery.getQualifiedName());
+                    //System.out.println("->" + entityClassOfTheQuery.getQualifiedName());
 
                     PsiModifierList psiModifierList =
                             entityClassOfTheQuery.getModifierList();
@@ -164,45 +175,32 @@ public class RoomQueryCodeInspection extends BaseJavaLocalInspectionTool {
                                     }
                                 }
                             }
+
+                            String className = entityClassOfTheQuery.getName();
+
+                            if (className != null)
+                                if (!className.equalsIgnoreCase(tableName)) {
+                                    holder.registerProblem(method.getModifierList(), "No Such table: " + tableName +
+                                                    ".Table Name of Entity Class(" + entityClassOfTheQuery.getQualifiedName() + ")is " + entityClassOfTheQuery.getName()
+
+                                            , ProblemHighlightType.GENERIC_ERROR);
+                                }
+
+
                         }
 
                     }
 
                 } else {
                     System.out.println("Not class ->" + method.getReturnType());
-                    return;
                 }
 
-
-                /*
-                *Now there is no custom table name give in Entity Class
-                *we use check with Return Type default table name
-                */
-                String methodReturnType = method.getReturnType().toString().toLowerCase();
-
-                StringTokenizer st = new StringTokenizer(methodReturnType, ":");
-                st.nextToken();
-                methodReturnType = st.nextToken();
-
-                if (methodReturnType.contains("list<")) {
-
-                    methodReturnType = methodReturnType.substring(
-                            methodReturnType.indexOf("list<") + "list<".length());
-
-                    st = new StringTokenizer(methodReturnType, ">");
-
-                    methodReturnType = st.nextToken();
-
-                }
-
-                if (!methodReturnType.equalsIgnoreCase(tableName)) {
-                    holder.registerProblem(method.getModifierList(), "No Such table: " + tableName
-                            , ProblemHighlightType.GENERIC_ERROR);
-                }
             }
 
         }
+
     }
+
 
     private void runQueryBindVariableCodeInspection(PsiMethod method, String annotation, @NotNull ProblemsHolder holder, List<String> methodParameterNameList) {
         String queryAnnotationText = annotation;
